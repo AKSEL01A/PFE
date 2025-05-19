@@ -1,0 +1,74 @@
+name: reservini
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  get: ^4.7.2
+  shared_preferences: ^2.5.3
+  video_player: ^2.9.5
+  image_picker: ^1.1.2
+  pin_code_fields: ^8.0.1
+  fluttertoast: ^8.2.12
+  permission_handler: ^11.4.0
+  flutter_launcher_icons: ^0.14.3
+  email_otp: ^3.0.2
+  qr_code_scanner_plus: ^2.0.10+1
+  geolocator: ^13.0.3
+  geocoding: ^3.0.0
+  theme_provider: ^0.6.0
+  provider: ^6.1.4
+  qr_flutter: ^4.1.0
+  share_plus: ^10.1.4
+  url_launcher: ^6.3.1
+  intl: ^0.18.1  # Updated version
+  http: ^1.3.0
+  get_storage: ^2.1.1
+  flutter_local_notifications: ^19.2.0
+  google_fonts: ^6.2.1
+  
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - lib/assets/OnBV.mp4
+    - lib/assets/images/facebook.png
+    - lib/assets/images/google.png
+    - lib/assets/images/apple.png
+    - lib/assets/images/qr.png
+    - lib/assets/images/qr2.png
+    - lib/assets/images/server.jpg
+    - lib/assets/images/pa.png
+    - lib/assets/images/fr.png
+    - lib/assets/images/uk.png
+    - lib/assets/images/sp.png
+    - lib/assets/images/chakchouka.jpg
+    - lib/assets/images/couscous.jpg
+    - lib/assets/images/sushi.jpg
+    - lib/assets/images/pizza.jpg
+    - lib/assets/images/img0.jpg
+    - lib/assets/images/img1.jpg
+    - lib/assets/images/img2.jpg
+    - lib/assets/images/img3.jpg
+    - lib/assets/images/img4.jpg
+    - lib/assets/images/offre1.jpg
+    - lib/assets/images/offre2.jpg
+ 
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "lib/assets/images/app_icon.png"
