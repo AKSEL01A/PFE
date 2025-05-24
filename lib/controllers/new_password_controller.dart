@@ -3,24 +3,35 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   static Future<void> updatePassword({
-    required String resetToken,
+    required String email,
+    required String otp,
     required String newPassword,
-    required String confirmPassword,
   }) async {
-    final url = Uri.parse('http://10.0.2.2:3000/auth/reset-password');
+    final url = Uri.parse('https://restaurant-back-main.onrender.com/auth/reset-password');
+
+    print('📤 Envoi des données de reset:');
+    print('Email: $email');
+    print('OTP: $otp');
+    print('New Password: $newPassword');
 
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'resetToken': resetToken,
+        'email': email,
+        'otp': otp,
         'newPassword': newPassword,
-        'confirmPassword': confirmPassword,
       }),
     );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
+    print('📥 Response status: ${response.statusCode}');
+    print('📥 Response body: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      print('✅ Mot de passe réinitialisé avec succès !');
+    } else {
       final error = jsonDecode(response.body)['message'] ?? 'Erreur inconnue';
+      print('❌ Erreur: $error');
       throw Exception(error);
     }
   }

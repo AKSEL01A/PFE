@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:reservini/controllers/notifications_controller.dart';
 import 'package:reservini/controllers/profile_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reservini/log-sign_in/login.dart';
@@ -33,13 +34,23 @@ class _SettingsPageState extends State<SettingsPage> {
     });
   }
 
-  Future<void> _toggleNotifications(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notifications', value);
-    setState(() {
-      notificationsEnabled = value;
-    });
+Future<void> _toggleNotifications(bool value) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('notifications', value);
+
+  setState(() {
+    notificationsEnabled = value;
+  });
+
+  final notifCtrl = Get.find<NotificationsController>();
+  notifCtrl.notificationsEnabled.value = value;
+
+  if (!value) {
+    notifCtrl.notifications.clear();
+    await notifCtrl.saveNotificationsToStorage();
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -55,22 +66,6 @@ class _SettingsPageState extends State<SettingsPage> {
           onPressed: () => Get.back(),
         ),
         title: Text("Paramètres", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notifications, color: isDark ? Colors.white : Colors.black),
-            onPressed: () {
-              Get.snackbar(
-                "Notifications",
-                notificationsEnabled
-                    ? "Les notifications sont activées"
-                    : "Les notifications sont désactivées",
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: isDark ? Colors.grey[800] : Colors.white,
-                colorText: isDark ? Colors.white : Colors.black,
-              );
-            },
-          )
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -202,6 +197,29 @@ class _SettingsPageState extends State<SettingsPage> {
                 Get.snackbar("Erreur", "Utilisateur non authentifié");
                 return;
               }
+
+              // 1. Annuler toutes les réservations
+await http.patch(
+  Uri.parse("https://restaurant-back-main.onrender.com/reservations/cancel-all/$userId"),
+  headers: {
+    "Authorization": "Bearer $token",
+    "Content-Type": "application/json",
+  },
+);
+
+// 2. Supprimer le compte
+final response = await http.delete(
+  Uri.parse("https://restaurant-back-main.onrender.com/user/$userId/force-delete"),
+  headers: {
+    "Authorization": "Bearer $token",
+    "Content-Type": "application/json",
+  },
+);
+
+print("🗑️ STATUS: ${response.statusCode}");
+print("🗑️ BODY: ${response.body}");
+
+
 
               try {
                 final response = await http.delete(
@@ -370,55 +388,81 @@ class LanguageSelectionPage extends StatelessWidget {
     final isDark = Get.isDarkMode;
     final box = GetStorage();
 
-    final languages = {
+    final activeLanguages = {
       'Français': const Locale('fr', 'FR'),
-      'English': const Locale('en', 'US'),
-      'العربية': const Locale('ar', 'SA'),
-      'Español': const Locale('es', 'ES'),
     };
 
-    final languageFlags = {
-      'Français': 'lib/assets/images/fr.png',
+    final comingSoonLanguages = {
       'English': 'lib/assets/images/uk.png',
       'العربية': 'lib/assets/images/pa.png',
       'Español': 'lib/assets/images/sp.png',
     };
 
+    final languageFlags = {
+      'Français': 'lib/assets/images/fr.png',
+    };
+
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
-        title: const Text("Sélectionner une langue"),
+        title: const Text("Langue"),
         backgroundColor: isDark ? Colors.black : Colors.white,
         iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
         titleTextStyle: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 20),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: languages.length,
-        itemBuilder: (context, index) {
-          String lang = languages.keys.elementAt(index);
-          String flagAsset = languageFlags[lang]!;
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: ListTile(
-              onTap: () {
-                final selectedLocale = languages[lang]!;
-                box.write("language", selectedLocale.languageCode);
-                Get.updateLocale(selectedLocale);
-                Navigator.pop(context);
-              },
-              leading: Image.asset(flagAsset, width: 30, height: 20),
-              title: Text(lang, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-              tileColor: isDark ? Colors.grey[800] : Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            ),
-          );
-        },
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Text("Langue disponible :", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          ...activeLanguages.entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: ListTile(
+                onTap: () {
+                  final selectedLocale = entry.value;
+                  box.write("language", selectedLocale.languageCode);
+                  Get.updateLocale(selectedLocale);
+                  Navigator.pop(context);
+                },
+                leading: Image.asset(languageFlags[entry.key]!, width: 30, height: 20),
+                title: Text(entry.key, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                tileColor: isDark ? Colors.grey[800] : Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              ),
+            );
+          }),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Text("Bientôt disponibles :", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          ...comingSoonLanguages.entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+              child: ListTile(
+                leading: Image.asset(entry.value, width: 30, height: 20, color: Colors.grey),
+                title: Text(
+                  entry.key,
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                trailing: Text("Bientôt", style: TextStyle(color: Colors.orangeAccent, fontSize: 12)),
+                tileColor: isDark ? Colors.grey[900] : Colors.grey[200],
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                enabled: false,
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
 }
+
 
 
 

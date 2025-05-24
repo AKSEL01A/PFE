@@ -6,11 +6,12 @@ import 'package:reservini/client/home_screen.dart';
 import 'package:reservini/controllers/confirmation_reservation_controller.dart';
 import 'package:reservini/controllers/login_controller.dart';
 import 'package:reservini/controllers/notifications_controller.dart';
+import 'package:reservini/controllers/welcom_page_controller.dart';
 import 'package:reservini/log-sign_in/newpassword.dart';
+import 'package:reservini/profile/activity_history_page.dart';
 import 'package:reservini/profile/help_support.dart';
 import 'package:reservini/profile/invite_a_friend.dart';
 import 'package:reservini/profile/privacy_page.dart';
-import 'package:reservini/profile/purchase_history.dart';
 import 'package:reservini/profile/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -23,9 +24,11 @@ void main() async {
   await GetStorage.init();
 
   // Injecter les contrôleurs
-  Get.put(ConfirmationReservationController());
   Get.put(NotificationsController()); // ✅ obligatoire pour éviter l'erreur
-  Get.put(LoginController()); // 💥 ضروري باش تبقى الأمور مربوطة
+  Get.put(LoginController()); // 💥 ضروري باش تبقى الأمور مربوطة*
+  Get.put(ConfirmationReservationController()); // ← instancier UNE SEULE FOIS ici
+
+Get.put(WelcomePageController()); // 💡 لازم لتفادي الخطأ
 
   await initializeDateFormatting('fr_FR', null);
   runApp(const MyApp());
@@ -46,7 +49,8 @@ theme: ThemeData(
       getPages: [
         GetPage(name: '/', page: () => const LandingPage()),
         GetPage(name: '/privacy', page: () => PrivacyPage()),
-        GetPage(name: '/history', page: () => const PurchaseHistoryPage()),
+        GetPage(name: '/history', page: () => ActivityHistoryPage()),
+
         GetPage(name: '/help', page: () => const HelpSupportPage()),
         GetPage(name: '/settings', page: () => const SettingsPage()),
         GetPage(name: '/invite', page: () => const InviteFriendPage()),

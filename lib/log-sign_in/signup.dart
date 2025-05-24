@@ -40,9 +40,17 @@ class SignupPage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 _buildTextField(
-                  label: 'Nom complet',
+                  label: 'Prénom',
                   icon: Icons.person,
-                  onChanged: (value) => signupController.name.value = value,
+                  onChanged: (value) => signupController.firstname.value = value,
+                ),
+
+                const SizedBox(height: 20),
+
+                _buildTextField(
+                  label: 'Nom',
+                  icon: Icons.person_outline,
+                  onChanged: (value) => signupController.lastname.value = value,
                 ),
 
                 const SizedBox(height: 20),

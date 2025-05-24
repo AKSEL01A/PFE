@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:reservini/common/toast.dart';
-import 'package:reservini/controllers/new_password_controller.dart';
 import 'package:reservini/log-sign_in/login.dart';
 import 'package:get/get.dart';
+import 'package:reservini/controllers/new_password_controller.dart';
+
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -40,9 +41,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     try {
       await ApiService.updatePassword(
-        resetToken: token,
+        email: email,
+        otp: token,
         newPassword: password,
-        confirmPassword: confirmPassword,
       );
 
       showToast('Succès', message: 'Mot de passe réinitialisé.');
@@ -101,7 +102,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -132,7 +133,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 textAlign: TextAlign.left,
               ),
               const SizedBox(height: 30),
-              _buildInputField(tokenController, "Token (depuis email)", "Code de réinitialisation"),
+              _buildInputField(tokenController, "Code reçu", "Code de réinitialisation"),
               _buildInputField(passwordController, "Nouveau mot de passe", "Nouveau mot de passe", obscure: true),
               _buildInputField(confirmPasswordController, "Confirmer mot de passe", "Confirmer le mot de passe", obscure: true),
               const SizedBox(height: 20),

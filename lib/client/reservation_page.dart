@@ -1,4 +1,5 @@
 // lib/pages/table_reservation_page.dart
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -37,25 +38,132 @@ late String restaurantImageUrl;
     'TERRACE'    : 'Jardin/Terrasse',
   };
 
-  @override
-  void initState() {
-    super.initState();
-    initializeDateFormatting('fr_FR', null);
-    controller = Get.put(TableReservationController());
-    controller.selectedDate.value = selectedDate;
-    restaurantName = widget.restaurant['name'] ?? 'Restaurant';
-    restaurantImageUrl = widget.restaurant['image'] ?? 'http://10.0.2.2:3000/uploads/default.jpg';
-    controller.fetchTables(widget.restaurant['id']);
-  }
+@override
+void initState() {
+  super.initState();
+  initializeDateFormatting('fr_FR', null);
+  controller = Get.put(TableReservationController());
+  controller.selectedDate.value = selectedDate;
 
-  List<String> getTimeOptions(String slot) {
-    switch (slot) {
-      case 'Matin':   return ['08:00','09:00','10:00','11:00'];
-      case 'Déjeuner':return ['12:00','13:00','14:00','15:00','16:00','17:00'];
-      case 'Dîner':   return ['18:00','19:00','20:00','21:00','22:00','23:00'];
-      default:        return [];
-    }
-  }
+  restaurantName = widget.restaurant['name'] ?? 'Restaurant';
+  restaurantImageUrl = widget.restaurant['imageUrl'] ?? 'https://restaurant-back-main.onrender.com/uploads/placeholder.jpg';
+
+  print("🖼️ restaurantImageUrl: $restaurantImageUrl"); // ✅ debug
+
+  controller.fetchTables(widget.restaurant['id']);
+}
+
+
+Widget buildTimePickerButton() {
+  return SizedBox(
+    width: double.infinity,
+    child: ElevatedButton.icon(
+      onPressed: () async {
+        final mealTimes = await controller.fetchMealTimes();
+
+        final slotMap = {
+          'matin': 'BREAKFAST',
+          'déjeuner': 'LUNCH',
+          'dîner': 'DINNER',
+        };
+        final currentSlot = selectedTimeSlot.toLowerCase();
+        final targetMeal = slotMap[currentSlot];
+
+        Map<String, dynamic>? slot;
+
+        try {
+          final matches = mealTimes.where(
+            (mt) => mt['mealTime'].toUpperCase() == targetMeal,
+          ).toList();
+
+          if (matches.isEmpty) {
+            Get.snackbar("Erreur", "Aucun créneau trouvé pour $selectedTimeSlot");
+            return;
+          }
+
+          slot = matches.first;
+        } catch (e) {
+          slot = null;
+        }
+
+        if (slot == null) {
+          Get.snackbar("Erreur", "Aucun créneau trouvé pour $selectedTimeSlot");
+          return;
+        }
+
+        final startParts = slot['startTime'].split(":").map(int.parse).toList();
+        final endParts = slot['endTime'].split(":").map(int.parse).toList();
+
+        final pickedTime = await showTimePicker(
+  context: context,
+  initialTime: TimeOfDay(hour: startParts[0], minute: startParts[1]),
+  builder: (context, child) {
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+      child: Theme(
+        data: ThemeData.light().copyWith(
+          colorScheme: ColorScheme.light(
+            primary: const Color.fromARGB(255, 245, 245, 245),
+            onPrimary: Colors.white,
+            surface: Colors.white,
+            onSurface: Colors.black,
+          ),
+          timePickerTheme: TimePickerThemeData(
+            backgroundColor: Colors.white,
+            hourMinuteTextColor: Colors.black,
+            dialHandColor: Colors.black,
+            dialBackgroundColor: Colors.grey.shade200,
+            entryModeIconColor: Colors.black,
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black, // ✅ Boutons Cancel/OK noirs
+              textStyle: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        child: child!,
+
+      ),
+    );
+  },
+);
+
+
+        if (pickedTime != null) {
+          final pickedMinutes = pickedTime.hour * 60 + pickedTime.minute;
+          final startMinutes = startParts[0] * 60 + startParts[1];
+          final endMinutes = endParts[0] * 60 + endParts[1];
+
+          if (pickedMinutes < startMinutes || pickedMinutes >= endMinutes) {
+            Get.snackbar("⛔ Heure invalide", "Choisissez une heure entre ${slot['startTime']} et ${slot['endTime']}");
+            return;
+          }
+
+          final formattedTime = "${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}";
+          setState(() {
+            selectedExactTime = formattedTime;
+            controller.selectedExactTime.value = formattedTime;
+          });
+
+          await controller.checkTableAvailability(widget.restaurant['id']);
+        }
+      },
+      icon: Icon(Icons.access_time, color: Colors.white),
+      label: Text(
+        selectedExactTime != null
+            ? "Heure choisie : $selectedExactTime"
+            : "Choisir une heure",
+        style: TextStyle(color: Colors.white),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.black,
+        padding: EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), 
+      ),
+    ),
+  );
+}
 
   final Map<String,String> timeRanges = {
     'Matin'  : '08:00 - 12:00',
@@ -186,7 +294,7 @@ late String restaurantImageUrl;
         builder: (ctx, child) => Theme(
           data: Theme.of(ctx).copyWith(
             colorScheme: ColorScheme.light(
-              primary: Colors.black,
+              primary: const Color.fromARGB(255, 141, 8, 8),
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: Colors.black,
@@ -259,60 +367,7 @@ late String restaurantImageUrl;
     );
   }
 
-  Widget buildExactTimeSelector() {
-  final now = DateTime.now();
-  return Center(
-    child: Wrap(
-      spacing: 8,
-      children: getTimeOptions(selectedTimeSlot).map((time) {
-        final parts = time.split(':');
-        final dt = DateTime(
-          selectedDate.year,
-          selectedDate.month,
-          selectedDate.day,
-          int.parse(parts[0]),
-          int.parse(parts[1]),
-        );
-
-        final isPast = selectedDate.year == now.year &&
-            selectedDate.month == now.month &&
-            selectedDate.day == now.day &&
-            dt.isBefore(now);
-
-        final sel = time == selectedExactTime;
-
-        return ChoiceChip(
-          label: Text(
-            isPast ? "$time ❌" : "$time ⏰",
-            style: TextStyle(
-              color: sel ? Colors.white : Colors.black,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          selected: sel,
-          onSelected: isPast
-              ? null
-              : (_) async {
-                  setState(() {
-                    selectedExactTime = time;
-                    controller.selectedExactTime.value = time;
-                  });
-
-                  // 🟢 Appeler la fonction de vérification de disponibilité
-                  await controller.checkTableAvailability(widget.restaurant['id']);
-                },
-          selectedColor: Colors.black,
-          backgroundColor: isPast ? Colors.grey[300] : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: Colors.grey),
-          ),
-        );
-      }).toList(),
-    ),
-  );
-}
-
+  
 
 void openReservationDialog() {
   final selectedTables = controller.tables.where((t) => t.selected).toList();
@@ -437,22 +492,26 @@ void openReservationDialog() {
             }
 
             controller.confirmReservation(() {
-              Navigator.pop(context);
-              Get.to(() => ReservationConfirmationPage(
-                reservationDetails: {
-                  'date': DateFormat.yMMMMd('fr_FR').format(selectedDate),
-                  'timeSlot': '$selectedTimeSlot à ${selectedExactTime ?? ''}',
-                  'tables': selectedTables.map((t) =>
-                    t.viewLabel + (t.name != null ? " ${t.name}" : " ${t.id.substring(0, 4)}")
-                  ).join(', '),
-                  'peopleCount': controller.peopleCount.value,
-                  'chairsCount': controller.chairsCount.value,
-                  'note': controller.noteText.value.isNotEmpty
-                      ? controller.noteText.value
-                      : 'Aucune note',
-                },
-              ));
-            });
+  Navigator.pop(context);
+
+  Get.to(() => ReservationConfirmationPage(
+    reservationDetails: {
+      'id': controller.latestReservationId.value, // ✅ هوني تستعمله
+      'date': DateFormat.yMMMMd('fr_FR').format(selectedDate),
+      'timeSlot': '$selectedTimeSlot à ${selectedExactTime ?? ''}',
+      'tables': selectedTables.map((t) =>
+        t.viewLabel + (t.name != null ? " ${t.name}" : " ${t.id.substring(0, 4)}")
+      ).join(', '),
+      'peopleCount': controller.peopleCount.value,
+      'chairsCount': controller.chairsCount.value,
+      'note': controller.noteText.value.isNotEmpty
+          ? controller.noteText.value
+          : 'Aucune note',
+    },
+  ));
+});
+
+
           },
           style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
           child: Text("Confirmer"),
@@ -556,19 +615,22 @@ final zoneC = all.where((t) =>
   children: [
     ClipRRect(
       borderRadius: BorderRadius.circular(15),
-      child: Image.network(
-        restaurantImageUrl,
-        height: 180,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          height: 180,
-          width: double.infinity,
-          color: Colors.grey[300],
-          alignment: Alignment.center,
-          child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-        ),
-      ),
+      child: Image.memory(
+  base64Decode(restaurantImageUrl.split(',').last),
+  height: 180,
+  width: double.infinity,
+  fit: BoxFit.cover,
+  errorBuilder: (_, __, ___) => Container(
+    height: 180,
+    width: double.infinity,
+    color: Colors.grey[300],
+    alignment: Alignment.center,
+    child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+  ),
+)
+
+
+
     ),
     Positioned(
       bottom: 0,
@@ -605,7 +667,7 @@ final zoneC = all.where((t) =>
         SizedBox(height: 20), Text("Créneau horaire", style: TextStyle(fontWeight: FontWeight.bold)),
         SizedBox(height: 10), buildTimeSlotSelector(),
         SizedBox(height: 20), Text("Heure d'arrivée prévue", style: TextStyle(fontWeight: FontWeight.bold)),
-        SizedBox(height: 10), buildExactTimeSelector(),
+        SizedBox(height: 10), buildTimePickerButton(),
         SizedBox(height: 20),
 
         // 🪑 Zones de tables

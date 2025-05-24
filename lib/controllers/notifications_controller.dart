@@ -4,28 +4,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-
 import 'confirmation_reservation_controller.dart';
 
 class NotificationsController extends GetxController {
   final RxList<Map<String, dynamic>> notifications = <Map<String, dynamic>>[].obs;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final notificationsEnabled = true.obs;
+
+  Timer? _reminderTimer;
 
   @override
   void onInit() {
     super.onInit();
     _initNotifications();
     loadNotificationsFromStorage();
+    final box = GetStorage();
+    notificationsEnabled.value = box.read('notifications') ?? true;
     _startReminderCheck();
   }
 
-  void _initNotifications() async {
+  @override
+  void onClose() {
+    _reminderTimer?.cancel();
+    super.onClose();
+  }
+
+  Future<void> _initNotifications() async {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidInit);
     await flutterLocalNotificationsPlugin.initialize(initSettings);
   }
 
   void sendSuccessNotification(String tableName, String time, String mealType) {
+    if (!notificationsEnabled.value) return;
+
     final message = 'Réservation confirmée à $mealType pour la table "$tableName" à $time.';
     _addToListUI("✅ Réservation confirmée", message, Icons.check_circle, Colors.green);
 
@@ -40,6 +52,8 @@ class NotificationsController extends GetxController {
   }
 
   void sendCancelNotification(String reservationName) {
+    if (!notificationsEnabled.value) return;
+
     final message = 'Votre réservation "$reservationName" a été annulée.';
     _addToListUI("❌ Réservation annulée", message, Icons.cancel, Colors.red);
 
@@ -54,6 +68,8 @@ class NotificationsController extends GetxController {
   }
 
   void _sendReminderNotification(String name, String date, String time) {
+    if (!notificationsEnabled.value) return;
+
     final message = 'Vous avez "$name" prévu le $date à $time. N’oubliez pas !';
     _addToListUI("⏰ Rappel de réservation", message, Icons.notifications_active, Colors.indigo);
 
@@ -62,7 +78,7 @@ class NotificationsController extends GetxController {
       title: '⏰ Rappel de réservation',
       body: message,
       channelId: 'reservation_reminder',
-      channelName: 'Rappel de réservation',
+      channelName: 'Rappel',
       color: Colors.indigo,
     );
   }
@@ -91,50 +107,51 @@ class NotificationsController extends GetxController {
         channelId,
         channelName,
         channelDescription: 'Notification $channelName',
-        importance: Importance.high,
+        importance: Importance.max,
         priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
         color: color,
+        ticker: 'Notification',
       );
+
       final details = NotificationDetails(android: androidDetails);
       await flutterLocalNotificationsPlugin.show(id, title, body, details);
     });
   }
 
   Future<void> saveNotificationsToStorage() async {
-  final box = GetStorage();
-  final data = notifications.map((n) => {
-    'title': n['title'],
-    'description': n['description'],
-    'time': n['time'],
-    'iconCode': (n['icon'] as IconData).codePoint,
-    'iconFontFamily': (n['icon'] as IconData).fontFamily,
-    'colorValue': (n['color'] as Color).value,
-  }).toList();
-
-  box.write('user_notifications', data);
-}
-
-
- Future<void> loadNotificationsFromStorage() async {
-  final box = GetStorage();
-  final data = box.read<List>('user_notifications');
-
-  if (data != null) {
-    notifications.value = data.map<Map<String, dynamic>>((item) {
-      return {
-        'title': item['title'],
-        'description': item['description'],
-        'time': item['time'],
-        'icon': IconData(item['iconCode'], fontFamily: item['iconFontFamily']),
-        'color': Color(item['colorValue']),
-      };
+    final box = GetStorage();
+    final data = notifications.map((n) => {
+      'title': n['title'],
+      'description': n['description'],
+      'time': n['time'],
+      'iconCode': (n['icon'] as IconData).codePoint,
+      'iconFontFamily': (n['icon'] as IconData).fontFamily,
+      'colorValue': (n['color'] as Color).value,
     }).toList();
+    box.write('user_notifications', data);
   }
-}
 
+  Future<void> loadNotificationsFromStorage() async {
+    final box = GetStorage();
+    final data = box.read<List>('user_notifications');
+
+    if (data != null) {
+      notifications.value = data.map<Map<String, dynamic>>((item) {
+        return {
+          'title': item['title'],
+          'description': item['description'],
+          'time': item['time'],
+          'icon': IconData(item['iconCode'], fontFamily: item['iconFontFamily']),
+          'color': Color(item['colorValue']),
+        };
+      }).toList();
+    }
+  }
 
   void _startReminderCheck() {
-    Timer.periodic(Duration(minutes: 1), (_) {
+    _reminderTimer = Timer.periodic(Duration(minutes: 1), (_) {
       final reservations = Get.find<ConfirmationReservationController>().reservations;
 
       for (final reservation in reservations) {

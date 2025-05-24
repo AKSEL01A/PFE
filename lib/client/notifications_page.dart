@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:reservini/client/home_screen.dart';
 import 'package:reservini/controllers/notifications_controller.dart';
 
 class NotificationsPage extends StatelessWidget {
@@ -10,33 +11,63 @@ class NotificationsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Notifications 🔔', style: TextStyle(color: Colors.black)),
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+onPressed: () => Get.offAll(() => HomePageClient()),
+            ),
+            const Text('Notifications',
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ],
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Get.back(),
-        ),
+        centerTitle: false,
         actions: [
           Obx(() => controller.notifications.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.delete, color: Colors.black),
                   tooltip: "Vider les notifications",
                   onPressed: () {
-                    Get.defaultDialog(
-                      title: "Confirmation",
-                      content: const Text("Supprimer toutes les notifications ?"),
-                      confirm: ElevatedButton(
-                        onPressed: () {
-                          controller.notifications.clear();
-                          Get.back();
-                        },
-                        child: const Text("Oui"),
-                      ),
-                      cancel: TextButton(
-                        onPressed: () => Get.back(),
-                        child: const Text("Non"),
+                    Get.dialog(
+                      AlertDialog(
+                        backgroundColor: Colors.white,
+                        title: const Text("Confirmation", style: TextStyle(color: Colors.black)),
+                        content: const Text("Supprimer toutes les notifications ?",
+                            style: TextStyle(color: Colors.black)),
+                        actions: [
+                          OutlinedButton.icon(
+                            onPressed: () => Get.back(),
+                            icon: Icon(Icons.close, color: Colors.red),
+                            label: Text("Annuler", style: TextStyle(color: Colors.red)),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.red),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              controller.notifications.clear();
+                              Get.back();
+                            },
+                            icon: Icon(Icons.check, color: Colors.white),
+                            label: Text("Confirmer"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -75,14 +106,16 @@ class NotificationsPage extends StatelessWidget {
                   backgroundColor: notification['color'],
                   child: Icon(notification['icon'], color: Colors.white),
                 ),
-                title: Text(notification['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                title: Text(notification['title'],
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 4),
                     Text(notification['description']),
                     const SizedBox(height: 4),
-                    Text(notification['time'], style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(notification['time'],
+                        style: const TextStyle(fontSize: 12, color: Colors.grey)),
                   ],
                 ),
               ),

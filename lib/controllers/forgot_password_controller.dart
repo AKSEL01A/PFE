@@ -27,10 +27,10 @@ class ForgotPasswordController extends GetxController {
 
   try {
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:3000/auth/forgot-password'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
-    );
+  Uri.parse('https://restaurant-back-main.onrender.com/auth/forgot-password'),
+  headers: {'Content-Type': 'application/json'},
+  body: jsonEncode({'email': email}),
+);
 
     print("📨 HTTP status code: ${response.statusCode}");
 

@@ -92,7 +92,7 @@ class ProfilePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
                 _buildProfileOption(Icons.privacy_tip_outlined, "Confidentialité", '/privacy'),
-                _buildProfileOption(Icons.history, "Historique d’achats", '/history'),
+                _buildProfileOption(Icons.history, "activité", '/history'),
                 _buildProfileOption(Icons.help_outline, "Aide & Support", '/help'),
                 _buildProfileOption(Icons.settings_outlined, "Paramètres", '/settings'),
                 _buildProfileOption(Icons.person_add_alt_outlined, "Inviter un ami", '/invite'),

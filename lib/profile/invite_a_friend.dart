@@ -22,12 +22,7 @@ class _InviteFriendPageState extends State<InviteFriendPage> {
       backgroundColor: isDark ? Colors.black : const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
         backgroundColor: isDark ? Colors.black : const Color.fromARGB(255, 255, 255, 255),
-        title: Text(
-          "Inviter un Ami",
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black,
-          ),
-        ),
+       
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           onPressed: () => Get.back(),
@@ -46,28 +41,7 @@ class _InviteFriendPageState extends State<InviteFriendPage> {
             const SizedBox(height: 20),
 
             // Referral Code Section
-            _buildSectionTitle("🎁 Votre Code de Parrainage", isDark),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey[800] : Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(referralCode, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
-                  IconButton(
-                    icon: Icon(Icons.copy, color: isDark ? Colors.white : Colors.black),
-                    onPressed: () {
-                      Get.snackbar("Copié !", "Votre code de parrainage a été copié !");
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
+            
             // Sharing Options
             _buildSectionTitle("📤 Partager avec vos amis", isDark),
             Row(
@@ -81,8 +55,7 @@ class _InviteFriendPageState extends State<InviteFriendPage> {
             const SizedBox(height: 20),
 
             // Track Invitations
-            _buildSectionTitle("📋 Suivi des Invitations", isDark),
-            Expanded(child: _buildInvitedFriendsList(isDark)),
+          
           ],
         ),
       ),
@@ -119,22 +92,5 @@ class _InviteFriendPageState extends State<InviteFriendPage> {
   }
 
   // Mock list of invited friends
-  Widget _buildInvitedFriendsList(bool isDark) {
-    List<Map<String, String>> invitedFriends = [
-      {"name": "Alice Dupont", "status": "Inscrite ✅"},
-      {"name": "Jean Martin", "status": "En attente ⏳"},
-      {"name": "Sophie Bernard", "status": "Inscrite ✅"},
-    ];
-
-    return ListView.builder(
-      itemCount: invitedFriends.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          leading: Icon(Icons.person, color: isDark ? Colors.white : Colors.blue),
-          title: Text(invitedFriends[index]["name"]!, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-          subtitle: Text(invitedFriends[index]["status"]!, style: TextStyle(color: isDark ? Colors.white70 : Colors.black)),
-        );
-      },
-    );
-  }
-}
+ 
+} 

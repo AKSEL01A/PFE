@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:geocoding/geocoding.dart';
+
 
 
 
@@ -19,14 +21,31 @@ class WelcomePageController extends GetxController {
 
   var hasUpcomingReservation = false.obs;
   var isAutoScrollEnabled = true.obs;
+  var userCity = ''.obs;
+  var categories = <String>[].obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    fetchRestaurants();
-    fetchPopularPlats();
+
+
+@override
+void onInit() {
+  super.onInit();
+  _initData();
+}
+
+void _initData() async {
+  isLoading.value = true;
+
+  await Future.wait([
+    fetchRestaurants(),
+    fetchPopularPlats(),
+  ]);
+
+  Future.delayed(const Duration(milliseconds: 800), () {
     checkUpcomingReservation();
-  }
+  });
+
+  isLoading.value = false;
+}
 
   Future<void> fetchRestaurants() async {
     try {
@@ -125,56 +144,70 @@ class WelcomePageController extends GetxController {
     restaurants.value = filtered;
   }
 
-  Future<void> filterNearbyRestaurants() async {
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        Get.snackbar("GPS désactivé", "Veuillez activer la localisation.");
-        return;
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          Get.snackbar("Permission refusée", "L'accès à la position est requis.");
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        Get.snackbar("Permission refusée", "L'accès est bloqué définitivement.");
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      final userLat = position.latitude;
-      final userLng = position.longitude;
-
-      final nearby = fullList.where((r) {
-        final lat = r['latitude'];
-        final lng = r['longitude'];
-        if (lat == null || lng == null) return false;
-
-        final distance = Geolocator.distanceBetween(
-          userLat,
-          userLng,
-          double.tryParse(lat.toString()) ?? 0.0,
-          double.tryParse(lng.toString()) ?? 0.0,
-        );
-
-        return distance <= 2000; // 2km
-      }).toList();
-
-      restaurants.value = nearby;
-      selectedCuisine.value = "À proximité";
-    } catch (e) {
-      print("Erreur géolocalisation : $e");
-      Get.snackbar("Erreur", "Impossible d'obtenir la position.");
+Future<void> filterNearbyRestaurants() async {
+  try {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      Get.snackbar("GPS désactivé", "Veuillez activer la localisation.");
+      return;
     }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        Get.snackbar("Permission refusée", "L'accès à la position est requis.");
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      Get.snackbar("Permission refusée", "L'accès est bloqué définitivement.");
+      return;
+    }
+
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+    final userLat = position.latitude;
+    final userLng = position.longitude;
+
+    // ✅ Récupération du nom de la ville
+    try {
+      final placemarks = await placemarkFromCoordinates(userLat, userLng);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        userCity.value = "📍 ${place.locality ?? place.administrativeArea ?? 'Position inconnue'}";
+      }
+    } catch (e) {
+      userCity.value = "📍 Ville non trouvée";
+    }
+
+    // ✅ Filtrer les restaurants dans un rayon de 70 km
+    final nearby = fullList.where((r) {
+      final lat = r['latitude'];
+      final lng = r['longitude'];
+      if (lat == null || lng == null) return false;
+
+      final distance = Geolocator.distanceBetween(
+        userLat,
+        userLng,
+        double.tryParse(lat.toString()) ?? 0.0,
+        double.tryParse(lng.toString()) ?? 0.0,
+      );
+
+      return distance <= 70000; // ✅ 70 km = 70,000 mètres
+    }).toList();
+
+    restaurants.value = nearby;
+    selectedCuisine.value = "À proximité";
+
+  } catch (e) {
+    print("Erreur géolocalisation : $e");
+    Get.snackbar("Erreur", "Impossible d'obtenir la position.");
   }
+}
+
 
   Future<List<dynamic>> fetchUserReservations() async {
     try {

@@ -5,101 +5,79 @@ import 'package:reservini/client/notifications_page.dart';
 import 'package:reservini/client/reservation_page.dart';
 import 'package:reservini/client/welcome_page.dart';
 import 'package:reservini/profile/profile.dart';
+import 'package:reservini/client/all_dishes_page.dart'; // assure-toi que ce fichier existe
 
-class HomePageClient extends StatelessWidget {
-  HomePageClient({Key? key}) : super(key: key);
-
-  final HomeController homeController = Get.put(HomeController());
-
-  final List<Widget> innerPages = [
-    WelcomePageClient(),                 // 0: Accueil
-    TableReservationPage(restaurant: {}), // 1: Réserver une Table
-    MyReservationsPage(),               // 2: Mes Réservations
-    NotificationsPage(),                // 3: Notifications
-  ];
+class HomePageClient extends StatefulWidget {
+  const HomePageClient({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Obx(() => innerPages[homeController.currentInnerPage.value]),
-      bottomNavigationBar: BottomNavBar(homeController: homeController),
-      backgroundColor: Colors.white,
-    );
-  }
+  _ClientHomePageState createState() => _ClientHomePageState();
 }
 
 class HomeController extends GetxController {
-  var currentInnerPage = 0.obs;
+  var currentInnerPage = 2.obs; // par défaut: accueil
 
   void changeInnerPage(int pageIndex) {
     currentInnerPage.value = pageIndex;
   }
 }
 
-class BottomNavBar extends StatefulWidget {
-  final HomeController homeController;
+class _ClientHomePageState extends State<HomePageClient> {
+  int _selectedIndex = 2;
+  final HomeController homeController = Get.put(HomeController());
 
-  const BottomNavBar({Key? key, required this.homeController}) : super(key: key);
-
-  @override
-  State<BottomNavBar> createState() => _BottomNavBarState();
-}
-
-class _BottomNavBarState extends State<BottomNavBar> {
-  int _selectedIndex = 0;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 4) {
-      Get.to(() => ProfilePage());
-    } else {
-      widget.homeController.changeInnerPage(index);
-    }
-  }
+  final List<Widget> innerPages = [
+    MyReservationsPage(),    // 0
+    AllDishesPage(),         // 1
+    WelcomePageClient(),     // 2
+    NotificationsPage(),     // 3
+    ProfilePage(),           // 4
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Container(
-        height: 70,
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: Offset(0, 4),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Obx(() => innerPages[homeController.currentInnerPage.value]),
+          Positioned(
+            bottom: 30,
+            left: 20,
+            right: 20,
+            child: Container(
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(0, Icons.book_online),     // Mes Réservations
+                  _buildNavItem(1, Icons.fastfood),        // Tous les plats
+                  _buildNavItem(2, Icons.home),            // Accueil
+                  _buildNavItem(3, Icons.notifications),   // Notifications
+                  _buildNavItem(4, Icons.person),          // Profil
+                ],
+              ),
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            //_buildIcon(Icons.calendar_today, 1),
-            _buildIcon(Icons.bookmark_added, 2),
-                        _buildIcon(Icons.home, 0),
-
-            _buildIcon(Icons.notifications, 3),
-            _buildIcon(Icons.person, 4),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildIcon(IconData icon, int index) {
+  Widget _buildNavItem(int index, IconData icon) {
     return AnimatedScale(
-      duration: Duration(milliseconds: 300),
       scale: _selectedIndex == index ? 1.2 : 1.0,
-      curve: Curves.easeInOut,
+      duration: Duration(milliseconds: 300),
       child: IconButton(
         icon: Icon(icon, color: Colors.white),
-        onPressed: () => _onItemTapped(index),
+        onPressed: () {
+          setState(() => _selectedIndex = index);
+          homeController.changeInnerPage(index);
+        },
       ),
     );
   }

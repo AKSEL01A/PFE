@@ -7,6 +7,8 @@ import 'package:reservini/client/home_screen.dart';
 import 'package:reservini/common/toast.dart';
 import 'package:reservini/client/welcome_page.dart';
 import 'package:reservini/server/home_screen.dart';
+import 'package:reservini/controllers/history_controller.dart';
+
 
 class LoginController extends GetxController {
   var isLoading = false.obs;
@@ -14,6 +16,7 @@ class LoginController extends GetxController {
 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final HistoryController historyController = Get.put(HistoryController());
 
   /// 🧠 Decode JWT token to extract userId from `sub` field
   String? extractUserIdFromToken(String token) {
@@ -75,6 +78,9 @@ class LoginController extends GetxController {
         print('✅ ID utilisateur extrait: $userId');
 
         showToast('Succès', message: 'Connexion réussie');
+
+        /// ✅ Enregistrement dans l’historique local
+        historyController.addAction('Connexion', 'Connexion réussie pour $userEmail');
 
         if (role == 'serveur') {
           Get.off(() => const ServerHomePage());
