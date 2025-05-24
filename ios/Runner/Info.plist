@@ -45,5 +45,31 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- ✅ Permissions iOS -->
+	<key>NSCameraUsageDescription</key>
+	<string>Nous avons besoin d'accéder à la caméra pour scanner les QR codes.</string>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Nous avons besoin d'accéder à la galerie pour choisir une photo.</string>
+
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Nous avons besoin de votre position pour afficher les restaurants proches.</string>
+
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Nous utilisons votre localisation pour des services améliorés.</string>
+
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Utilisé pour les fonctionnalités audio (si nécessaires).</string>
+
+	<key>NSContactsUsageDescription</key>
+	<string>Accès aux contacts (si jamais nécessaire dans le futur).</string>
+
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+
 </dict>
 </plist>
